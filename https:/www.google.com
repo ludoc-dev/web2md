@@ -1,3 +1,0 @@
-[Publicidade](https://www.google.com/intl/pt-BR/ads/)[Solu��es empresariais](https://www.google.com/services/)[Sobre o Google](https://www.google.com/intl/pt-BR/about.html)[Google.com.br](https://www.google.com/setprefdomain?prefdom=BR&prev=https://www.google.com.br/&sig=K_9B_OJCeMyvAxB_aAexJ8mQ9nBJE%3D)
-
-© 2026 - [Privacidade](https://www.google.com/intl/pt-BR/policies/privacy/) - [Termos](https://www.google.com/intl/pt-BR/policies/terms/)
