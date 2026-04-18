@@ -43,14 +43,45 @@ async function fetchHTML(targetUrl: string): Promise<string> {
     return await file.text();
   }
 
+  // GitHub-specific: use raw.githubusercontent.com for better performance
+  if (targetUrl.includes('github.com') && targetUrl.includes('/blob/')) {
+    const rawUrl = targetUrl
+      .replace('github.com', 'raw.githubusercontent.com')
+      .replace('/blob/', '/');
+    console.error(`[DEBUG] Using GitHub raw URL: ${rawUrl}`);
+    const response = await fetch(rawUrl);
+    if (response.ok) return await response.text();
+    console.error(`[DEBUG] Raw URL failed, falling back to browser`);
+  }
+
   // Suporte a URLs HTTP/HTTPS
   if (flags.js) {
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage();
-    await page.goto(targetUrl, { waitUntil: "networkidle" });
-    const html = await page.content();
-    await browser.close();
-    return html;
+
+    try {
+      await page.goto(targetUrl, {
+        waitUntil: "networkidle",
+        timeout: 30000 // Increased timeout
+      });
+
+      // GitHub-specific: wait for dynamic content to load
+      if (targetUrl.includes('github.com')) {
+        await page.waitForSelector('markdown-body, .markdown-body, [data-testid="markdown-content"], .file-content', {
+          timeout: 10000
+        }).catch(() => {
+          // Fallback: wait for any content
+          return page.waitForTimeout(2000);
+        });
+      }
+
+      const html = await page.content();
+      await browser.close();
+      return html;
+    } catch (error) {
+      await browser.close();
+      throw error;
+    }
   }
   const response = await fetch(targetUrl);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -68,6 +99,30 @@ function parseToMarkdown(html: string): string {
 
   const dom = new JSDOM(html, { url: jsdomUrl });
   const document = dom.window.document;
+
+  // GitHub-specific: use custom selectors as Readability fails
+  if (url.includes('github.com')) {
+    const githubSelectors = [
+      'markdown-body',
+      '.markdown-body',
+      '[data-testid="markdown-content"]',
+      '.file-content',
+      'article.markdown-body',
+      '.Box-body .markdown-body'
+    ];
+
+    for (const selector of githubSelectors) {
+      const element = document.querySelector(selector);
+      if (element?.textContent) {
+        const turndown = new TurndownService({
+          headingStyle: "atx",
+          codeBlockStyle: "fenced",
+        });
+        return turndown.turndown(element.innerHTML);
+      }
+    }
+  }
+
   const article = new Readability(document).parse();
   if (!article?.content) throw new Error("No content found");
   const turndown = new TurndownService({

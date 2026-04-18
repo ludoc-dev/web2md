@@ -15,7 +15,7 @@ import {
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import TurndownService from "turndown";
-import { chromium } from "playwright";
+import { smartFetch } from "./smart-fetcher.js";
 
 // Cache with TTL management
 const cache = new Map();
@@ -35,7 +35,7 @@ const server = new Server(
 );
 
 /**
- * Fetch HTML from URL or file with timeout and JS rendering support
+ * Fetch HTML from URL or file with smart fetching strategy
  */
 async function fetchHTML(targetUrl, useJS = false, timeoutMs = 20000) {
   // Support local files (file://)
@@ -62,38 +62,26 @@ async function fetchHTML(targetUrl, useJS = false, timeoutMs = 20000) {
     }
   }
 
-  let html;
+  try {
+    // Use smart fetcher (tries: domain extractor → feed → HTTP → hidden API → Playwright)
+    const result = await smartFetch(targetUrl, {
+      timeout: timeoutMs / 1000,
+      usePlaywright: useJS,
+      debug: process.env.DEBUG === 'true'
+    });
 
-  // Support HTTP/HTTPS URLs
-  if (useJS) {
-    const browser = await chromium.launch({ headless: true });
-    const page = await browser.newPage();
+    console.error(`[SmartFetcher] Method used: ${result.method}`);
 
-    try {
-      await page.goto(targetUrl, {
-        waitUntil: "networkidle",
-        timeout: timeoutMs
-      });
-      html = await page.content();
-    } finally {
-      await browser.close();
-    }
-  } else {
-    // Simple HTTP fetch
-    const response = await fetch(targetUrl, { signal: AbortSignal.timeout(timeoutMs) });
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    html = await response.text();
+    // Cache the result
+    cache.set(cacheKey, {
+      data: result.content,
+      timestamp: Date.now()
+    });
+
+    return result.content;
+  } catch (error) {
+    throw new Error(`Smart fetch failed: ${error.message}`);
   }
-
-  // Cache the result
-  cache.set(cacheKey, {
-    data: html,
-    timestamp: Date.now()
-  });
-
-  return html;
 }
 
 /**
@@ -108,6 +96,29 @@ function parseToMarkdown(html, baseUrl) {
 
   const dom = new JSDOM(html, { url: jsdomUrl });
   const document = dom.window.document;
+
+  // GitHub-specific: use custom selectors as Readability fails
+  if (baseUrl.includes('github.com')) {
+    const githubSelectors = [
+      'markdown-body',
+      '.markdown-body',
+      '[data-testid="markdown-content"]',
+      '.file-content',
+      'article.markdown-body',
+      '.Box-body .markdown-body'
+    ];
+
+    for (const selector of githubSelectors) {
+      const element = document.querySelector(selector);
+      if (element?.textContent) {
+        const turndown = new TurndownService({
+          headingStyle: "atx",
+          codeBlockStyle: "fenced",
+        });
+        return turndown.turndown(element.innerHTML);
+      }
+    }
+  }
 
   const article = new Readability(document).parse();
   if (!article?.content) {

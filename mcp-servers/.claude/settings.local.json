@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__web2md__web2md_convert",
+      "mcp__notebooklm-mcp__notebook_query"
+    ]
+  }
+}

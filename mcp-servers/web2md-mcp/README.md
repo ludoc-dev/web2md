@@ -1,6 +1,6 @@
-# web2md MCP Server
+# web2md MCP Server - Smart Fetcher Edition
 
-Model Context Protocol server for web2md - convert web content to clean Markdown with advanced features.
+**Free, efficient, clean room web scraping that doesn't require rewriting code for every website.**
 
 ## Features
 
