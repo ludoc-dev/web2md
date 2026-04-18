@@ -1,0 +1,21 @@
+# pre-commit config (opcional)
+repos:
+  - repo: local
+    hooks:
+      - id: black
+        name: Black (Python formatter)
+        entry: black .
+        language: system
+        types: [python]
+      
+      - id: isort
+        name: isort (Python import sorter)
+        entry: isort .
+        language: system
+        types: [python]
+      
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        entry: trailing-whitespace-fixer
+        language: system
+        types: [text]

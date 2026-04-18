@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# web2md-cli wrapper
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+case "$1" in
+  --version) echo "web2md v1.0.0"; exit 0 ;;
+  --help) echo "Uso: web2md <URL> [--js] [--out file] [--enhanced]"; exit 0 ;;
+  *) bun run web2md.ts "$1" ;;
+esac

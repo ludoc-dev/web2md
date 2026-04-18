@@ -1,0 +1,33 @@
+# requirements.txt - Dependências para testes web2md
+
+# BDD Framework
+behave==1.2.6
+
+# Unit Testing
+pytest==8.0.0
+pytest-cov==4.0.0
+pytest-xdist==3.5.0
+
+# Performance Testing
+locust==2.20.0
+
+# Code Quality
+flake8==7.0.0
+mypy==1.8.0
+bandit==1.7.6
+
+# Coverage
+coverage==7.4.1
+coverage[toml]==7.4.1
+
+# JavaScript Testing (Playwright)
+playwright>=1.40.0
+
+# Data Validation
+pydantic>=2.5.0
+
+# Type Hints
+typing-extensions>=4.9
+
+# Utilities
+requests==2.31.0

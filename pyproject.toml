@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "auto-prompt"
+version = "0.1.0"
+description = "Auto Prompt Generation System for Subagentic Programming"
+authors = [{name = "Auto Prompt System"}]
+license = {text = "MIT"}
+requires-python = ">=3.8"
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["auto_prompt*"]
+
+[tool.setuptools.package-data]
+auto_prompt = ["templates/*.json", "templates/agents/*.md"]

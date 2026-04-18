@@ -1,0 +1,32 @@
+{
+  "name": "web2md-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for web2md - convert web content to clean Markdown",
+  "type": "module",
+  "main": "server.js",
+  "bin": {
+    "web2md-mcp": "server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "keywords": [
+    "mcp",
+    "web2md",
+    "markdown",
+    "web-scraping"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "jsdom": "^25.0.0",
+    "@mozilla/readability": "^0.5.0",
+    "turndown": "^7.1.2",
+    "playwright": "^1.48.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

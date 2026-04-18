@@ -1,0 +1,95 @@
+# docker-compose.yml - Orquestração completa do ambiente
+# web2md + Test Automation + Auto-Research + CI/CD
+
+version: '3.8'
+
+services:
+  # ========================================
+  # Serviço Principal: web2md + Tests
+  # ========================================
+  web2md:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: web2md-app
+    working_dir: /app
+    volumes:
+      # Montar código fonte (desenvolvimento)
+      - .:/app
+      # Montar research directory
+      - ~/.claude/research:/root/.claude/research
+      # Cache de dependências
+      - web2md-cache:/root/.bun
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CI_PIPELINE_SOURCE=docker-compose
+      - CLAUDE_AGENTS_MD=/root/.claude/agents.md
+    ports:
+      - "3000:3000"  # Se precisar de porta
+    command: tail -f /dev/null  # Manter container rodando
+
+  # ========================================
+  # Test Runner: Behave + Pytest + Locust
+  # ========================================
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test-runner
+    container_name: test-runner
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ./reports:/app/reports
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - web2md
+    command: tail -f /dev/null
+
+  # ========================================
+  # GitLab Runner (Self-hosted)
+  # ========================================
+  gitlab-runner:
+    image: gitlab/gitlab-runner:latest
+    container_name: gitlab-runner
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - gitlab-runner-config:/etc/gitlab-runner
+    environment:
+      - GITLAB_URL=https://gitlab.com
+      # Registrado via: docker exec -it gitlab-runner gitlab-runner register
+      # RUNNER_EXECUTOR=docker
+    privileged: true
+
+  # ========================================
+  # Serviço de Performance (Locust Web UI)
+  # ========================================
+  locust-ui:
+    image: locustio/locust
+    container_name: locust-ui
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./locustfile.py:/mnt/locustfile.py
+    command: --locustfile /mnt/locustfile.py
+
+# ========================================
+  # Volumes persistentes
+# ========================================
+volumes:
+  web2md-cache:
+    driver: local
+  gitlab-runner-config:
+    driver: local
+  research-data:
+    driver: local
+
+# ========================================
+  # Networks
+# ========================================
+networks:
+  default:
+    name: web2md-network

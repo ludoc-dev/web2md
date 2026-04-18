@@ -1,0 +1,42 @@
+{
+  "implementation": {
+    "template": "# Task: Implement {feature}\n\n## Overview\nImplement {feature} for {project_name}.\n\n## Requirements\n{requirements}\n\n## Context\n\n### Relevant Code\n{semantic_results}\n\n### Dependencies\n{dependencies}\n\n### Implementation Examples\n{examples}\n\n## Technical Specifications\n- **Tech Stack:** {tech_stack}\n- **Files to Modify:** {files}\n- **Integration Points:** {integration_points}\n\n## Quality Standards\n- Follow existing code conventions\n- Include error handling\n- Add appropriate tests\n- Document complex logic\n\n## Deliverables\n1. Implementation code\n2. Unit tests\n3. Integration notes\n4. Documentation updates\n\nPlease implement this feature following best practices and maintaining consistency with the existing codebase.",
+    "context_sources": ["semantic_search", "code_graph", "dependencies"],
+    "required_variables": ["feature", "project_name", "requirements"],
+    "metadata": {
+      "complexity": "medium",
+      "estimated_tokens": 2500,
+      "suggested_model": "sonnet"
+    }
+  },
+  "refactoring": {
+    "template": "# Task: Refactor {target}\n\n## Overview\nRefactor {target} to {objective}.\n\n## Current Implementation\n```{language}\n{current_code}\n```\n\n## Issues Identified\n{issues}\n\n## Refactoring Goals\n{goals}\n\n## Analysis\n\n### Impact Analysis\n{impact_analysis}\n\n### Call Graph\n{call_graph}\n\n### Dependencies\n{dependencies}\n\n## Refactoring Approach\n{approach}\n\n## Testing Strategy\n{testing_strategy}\n\nPlease refactor the code while:\n- Preserving all existing functionality\n- Improving code quality and maintainability\n- Following best practices\n- Ensuring all tests pass",
+    "context_sources": ["impact_analysis", "trace_calls", "current_code"],
+    "required_variables": ["target", "objective"],
+    "metadata": {
+      "complexity": "medium",
+      "estimated_tokens": 2000,
+      "suggested_model": "sonnet"
+    }
+  },
+  "debugging": {
+    "template": "# Task: Debug {issue}\n\n## Problem Description\n{problem_description}\n\n## Error Details\n```\n{error}\n```\n\n## Stack Trace\n```\n{stack_trace}\n```\n\n## Context\n\n### Relevant Code\n```{language}\n{code_context}\n```\n\n### Execution Flow\n{execution_flow}\n\n### Environment\n{environment}\n\n## Investigation Steps\n1. Analyze the error and stack trace\n2. Identify the root cause\n3. Review related code and dependencies\n4. Check for similar issues\n5. Propose and implement fix\n\n## Similar Issues\n{similar_issues}\n\n## Debugging Strategy\n{debugging_strategy}\n\nPlease:\n1. Identify the root cause\n2. Explain the issue clearly\n3. Propose a fix\n4. Implement the solution\n5. Add tests to prevent regression",
+    "context_sources": ["semantic_search", "code_context", "similar_issues"],
+    "required_variables": ["issue", "error"],
+    "metadata": {
+      "complexity": "medium",
+      "estimated_tokens": 2000,
+      "suggested_model": "sonnet"
+    }
+  },
+  "research": {
+    "template": "# Research Task: {topic}\n\n## Research Objective\n{objective}\n\n## What We Know\n{known_info}\n\n## What to Find Out\n{research_questions}\n\n## Sources to Investigate\n{sources}\n\n## Research Strategy\n1. Search codebase for relevant implementations\n2. Review external documentation\n3. Analyze similar patterns\n4. Evaluate approaches\n5. Document findings\n\n## Deliverables\n1. Summary of findings\n2. Comparison of approaches\n3. Code examples (if applicable)\n4. Recommendations\n5. Risks and considerations\n\n## Research Context\n{context}\n\nPlease conduct thorough research and provide comprehensive findings with actionable recommendations.",
+    "context_sources": ["web2md", "semantic_search", "online_search"],
+    "required_variables": ["topic", "objective"],
+    "metadata": {
+      "complexity": "medium",
+      "estimated_tokens": 3000,
+      "suggested_model": "sonnet"
+    }
+  }
+}

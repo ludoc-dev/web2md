@@ -1,0 +1,132 @@
+# .dockerignore - O que NÃO enviar para o Docker image
+
+# ========================================
+# Python
+# ========================================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# ========================================
+# Testing
+# ========================================
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.hypothesis/
+.behave/
+reports/
+*.cover
+*.html
+*.xml
+*.json
+behave.json
+junit*.xml
+performance*.html
+performance*.csv
+
+# ========================================
+# Virtual Environments
+# ========================================
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ========================================
+# IDEs
+# ========================================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ========================================
+# OS
+# ========================================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ========================================
+# Project Specific
+# ========================================
+# Logs
+*.log
+*.log.*
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# Research (montado como volume)
+.claude/research/discovered/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+.dockerignore
+Dockerfile
+docker-compose.yml
+.docker/
+
+# ========================================
+# Documentation
+# ========================================
+*.md
+docs/_build/
+
+# ========================================
+# Cache
+# ========================================
+.cache/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ========================================
+# Bun
+# ========================================
+node_modules/
+bun.lockb
+*.tgz
+
+# ========================================
+# Auto-generated
+# =================================#
+scripts/__pycache__/
+*.pyc

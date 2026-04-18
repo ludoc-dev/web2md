@@ -1,0 +1,69 @@
+# docker-compose.test.yml - Ambiente de testes completo
+# BDD + TDD + Performance + Quality
+
+version: '3.8'
+
+services:
+  # ========================================
+  # Test Runner: BDD + TDD + Locust
+  # ========================================
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: test-runner
+    container_name: test-runner
+    working_dir: /app
+    volumes:
+      - .:/app
+      - test-reports:/app/reports
+      - coverage-reports:/app/htmlcov
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CI_PIPELINE_SOURCE=docker-compose
+    command: tail -f /dev/null  # Maném rodando para execução interativa
+
+  # ========================================
+  # Performance Tests (Locust)
+  # ========================================
+  locust:
+    image: locustio/locust
+    container_name: locust-performance
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./locustfile.py:/mnt/locustfile.py
+    command: --locustfile /mnt/locustfile.py --host=https://example.com
+
+  # ========================================
+  # Web2md Service (para testes integrados)
+  # ========================================
+  web2md:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    container_name: web2md-test
+    working_dir: /app
+    volumes:
+      - .:/app
+      - ~/.claude/research:/root/.claude/research
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: tail -f /dev/null
+
+# ========================================
+# Volumes para reports
+# ========================================
+volumes:
+  test-reports:
+    driver: local
+  coverage-reports:
+    driver: local
+
+# ========================================
+# Network
+# ========================================
+networks:
+  default:
+    name: test-network

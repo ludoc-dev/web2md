@@ -1,0 +1,317 @@
+# .gitlab-ci.yml - Pipeline Completo com Docker Integration
+# BDD + TDD + Performance + Quality + Auto-Research
+
+stages:
+  - discover        # Fase 1: Descoberta automatizada
+  - build           # Fase 2: Build Docker images
+  - test            # Fase 3: Testes em containers
+  - performance     # Fase 4: Testes de performance
+  - quality         # Fase 5: Qualidade de código
+  - report          # Fase 6: Relatório consolidado
+
+# Variáveis globais
+variables:
+  DOCKER_DRIVER: overlay2
+  DOCKER_TLS_CERTDIR: "/certs"
+  PODMAN_VERSION: "latest"
+  WEB2MD_IMAGE: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  WEB2MD_IMAGE_LATEST: $CI_REGISTRY_IMAGE:latest
+  PYTHONUNBUFFERED: "1"
+  CI_APPLICATION_REPOSITORY: $CI_REGISTRY_IMAGE
+  CI_APPLICATION_TAG: $CI_COMMIT_SHORT_SHA
+
+# ========================================
+# STAGE 1: DISCOVER (Auto-Research)
+# ========================================
+discover:
+  stage: discover
+  image: python:3.14-slim
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl git
+  script:
+    # Executar auto-research
+    - if [ -f "$HOME/.claude/research/auto-research.sh" ]; then
+        bash "$HOME/.claude/research/auto-research.sh";
+      else
+        echo "auto-research.sh não encontrado, pulando...";
+      fi
+    # Contar descobertas
+    - echo "Descobertas: $(find $HOME/.claude/research/discovered -name '*.md' 2>/dev/null | wc -l)"
+  artifacts:
+    when: always
+    paths:
+      - .claude/research/discovered/
+    expire_in: 1 week
+  only:
+    - main
+    - develop
+  allow_failure: true
+
+# ========================================
+# STAGE 2: BUILD (Docker Images)
+# ========================================
+build:image:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    # Login no registry
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    # Build multi-stage
+    - docker build -t $WEB2MD_IMAGE -t $WEB2MD_IMAGE_LATEST .
+    # Build test-runner
+    - docker build --target test-runner -t $WEB2MD_IMAGE-test .
+    # Push images
+    - docker push $WEB2MD_IMAGE
+    - docker push $WEB2MD_IMAGE_LATEST
+    - docker push $WEB2MD_IMAGE-test
+  only:
+    - main
+    - develop
+    - merge_requests
+
+# ========================================
+# STAGE 3: TEST (Testes em Docker)
+# ========================================
+test:bdd:
+  stage: test
+  image: $WEB2MD_IMAGE-test
+  services:
+    - docker:dind
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Rodar BDD tests
+    - behave tests/features/ --format=json --outfile=behave.json
+    - behave tests/features/ --format=html --outfile=behave.html
+    - behave tests/features/ --format=junit --outfile=junit.xml
+  artifacts:
+    when: always
+    paths:
+      - behave.json
+      - behave.html
+      - junit.xml
+    reports:
+      junit: junit.xml
+  dependencies:
+    - build:image
+
+test:tdd:
+  stage: test
+  image: $WEB2MD_IMAGE-test
+  services:
+    - docker:dind
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Rodar TDD tests
+    - pytest tests/unit/ --cov=. --cov-report=html --cov-report=xml --cov-report=term
+    - pytest tests/unit/ --junitxml=junit-unit.xml
+  artifacts:
+    when: always
+    paths:
+      - htmlcov/
+      - coverage.xml
+      - junit-unit.xml
+    reports:
+      junit: junit-unit.xml
+  coverage: '/Coverage: \d+\.\d+%/'
+  dependencies:
+    - build:image
+
+test:docker:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    # Testar Docker compose
+    - docker pull $WEB2MD_IMAGE
+    - docker run --rm $WEB2MD_IMAGE behave tests/features/
+    - docker run --rm $WEB2MD_IMAGE pytest tests/unit/ -v
+  dependencies:
+    - build:image
+
+# ========================================
+# STAGE 4: PERFORMANCE (Locust)
+# ========================================
+performance:
+  stage: performance
+  image: $WEB2MD_IMAGE-test
+  services:
+    - docker:dind
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Rodar testes de carga
+    - locust -f locustfile.py --headless --users 10 --run-time 30s --host https://example.com --html performance.html
+  artifacts:
+    when: always
+    paths:
+      - performance.html
+  only:
+    - main
+    - develop
+  dependencies:
+    - build:image
+
+# ========================================
+# STAGE 5: QUALITY (Quality Gates)
+# ========================================
+quality:flake8:
+  stage: quality
+  image: $WEB2MD_IMAGE-test
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Style check
+    - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - flake8 . --max-line-length=100 --exclude=node_modules,dist,build,.eggs
+  allow_failure: true
+  dependencies:
+    - build:image
+
+quality:mypy:
+  stage: quality
+  image: $WEB2MD_IMAGE-test
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Type checking
+    - mypy . --ignore-missing-imports
+  allow_failure: true
+  dependencies:
+    - build:image
+
+quality:security:
+  stage: quality
+  image: $WEB2MD_IMAGE-test
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Security scan
+    - bandit -r . -f json -o bandit-report.json
+  artifacts:
+    when: always
+    paths:
+      - bandit-report.json
+    expire_in: 1 week
+  dependencies:
+    - build:image
+
+# ========================================
+# STAGE 6: REPORT (Consolidado)
+# ========================================
+report:
+  stage: report
+  image: $WEB2MD_IMAGE-test
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Gerar relatório consolidado
+    - mkdir -p reports
+    - echo "Pipeline: $CI_PIPELINE_URL" > reports/pipeline-info.txt
+    - echo "Commit: $CI_COMMIT_SHORT_SHA" >> reports/pipeline-info.txt
+    - echo "Branch: $CI_COMMIT_REF_NAME" >> reports/pipeline-info.txt
+    # Copiar todos os relatórios
+    - cp behave.json behave.html junit.xml junit-unit.xml coverage.xml performance.html bandit-report.json reports/ 2>/dev/null || true
+    # Criar index
+    - echo "<h1>web2md Test Report</h1>" > reports/index.html
+    - echo "<p>Pipeline: <a href=\"$CI_PIPELINE_URL\">$CI_PIPELINE_ID</a></p>" >> reports/index.html
+    - echo "<h2>Reports</h2><ul>" >> reports/index.html
+    - test -f behave.html && echo "<li><a href='behave.html'>BDD Report</a></li>" >> reports/index.html
+    - test -f htmlcov/index.html && echo "<li><a href='htmlcov/index.html'>Coverage Report</a></li>" >> reports/index.html
+    - test -f performance.html && echo "<li><a href='performance.html'>Performance Report</a></li>" >> reports/index.html
+    - test -f bandit-report.json && echo "<li><a href='bandit-report.json'>Security Report</a></li>" >> reports/index.html
+    - echo "</ul>" >> reports/index.html
+  artifacts:
+    when: always
+    paths:
+      - reports/
+    expire_in: 30 days
+  only:
+    - main
+    - develop
+  dependencies:
+    - test:bdd
+    - test:tdd
+    - performance
+    - quality:security
+
+# ========================================
+# JOBS MANUAIS (On-demand)
+# ========================================
+test:all:manual:
+  stage: test
+  image: $WEB2MD_IMAGE-test
+  services:
+    - docker:dind
+  variables:
+    GIT_STRATEGY: none
+  script:
+    # Rodar todos os testes
+    - ./tests/run-all-tests.sh
+  when: manual
+  dependencies:
+    - build:image
+
+docker:test:manual:
+  stage: test
+  image: docker:latest
+  services:
+    - docker:dind
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin $CI_REGISTRY
+  script:
+    # Testar Docker compose completo
+    - docker-compose -f docker-compose.test.yml build
+    - docker-compose -f docker-compose.test.yml up -d
+    - sleep 10
+    - docker-compose -f docker-compose.test.yml exec test-runner behave tests/features/
+    - docker-compose -f docker-compose.test.yml exec test-runner pytest tests/unit/ -v
+    - docker-compose -f docker-compose.test.yml down
+  when: manual
+
+research:full:
+  stage: discover
+  image: python:3.14-slim
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq curl git
+  script:
+    # Pesquisa completa
+    - if [ -f "$HOME/.claude/research/auto-research.sh" ]; then
+        bash "$HOME/.claude/research/auto-research.sh";
+      fi
+  when: manual
+  artifacts:
+    paths:
+      - .claude/research/discovered/
+
+# ========================================
+# RULES E POLICIES
+# ========================================
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "develop"'
+      when: always
+    - when: never
+
+# Fail rápido em erros
+interruptible: true
+
+# ========================================
+# AFTER SCRIPT
+# ========================================
+after_script:
+  - echo "Pipeline: $CI_PIPELINE_URL"
+  - echo "Commit: $CI_COMMIT_SHORT_SHA"
+  - echo "Job: $CI_JOB_NAME"
+  - echo "Status: $CI_JOB_STATUS"

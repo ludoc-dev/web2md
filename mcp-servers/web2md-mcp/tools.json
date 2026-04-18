@@ -1,0 +1,83 @@
+{
+  "tools": [
+    {
+      "name": "web2md_convert",
+      "description": "Convert a URL or file to clean Markdown. Removes ads, navbars, and noise while preserving article structure.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "HTTP/HTTPS URL or local file path to convert"
+          },
+          "js": {
+            "type": "boolean",
+            "description": "Enable JavaScript rendering for SPAs (slower, uses Playwright)",
+            "default": false
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Timeout in seconds (default: 20)",
+            "default": 20
+          }
+        },
+        "required": ["url"]
+      }
+    },
+    {
+      "name": "web2md_batch",
+      "description": "Convert multiple URLs to Markdown in batch. Returns array of conversion results.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Array of URLs to convert"
+          },
+          "js": {
+            "type": "boolean",
+            "description": "Enable JavaScript rendering for all URLs",
+            "default": false
+          },
+          "timeout": {
+            "type": "number",
+            "description": "Timeout in seconds per URL (default: 20)",
+            "default": 20
+          }
+        },
+        "required": ["urls"]
+      }
+    },
+    {
+      "name": "web2md_status",
+      "description": "Check cache status and performance metrics",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "clearCache": {
+            "type": "boolean",
+            "description": "Clear the cache before returning status",
+            "default": false
+          }
+        }
+      }
+    },
+    {
+      "name": "web2md_convert_file",
+      "description": "Convert a local file to Markdown. Supports HTML files and text files.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "filePath": {
+            "type": "string",
+            "description": "Local file path to convert"
+          }
+        },
+        "required": ["filePath"]
+      }
+    }
+  ]
+}
